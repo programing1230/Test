@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+   xmlns:security="http://www.springframework.org/schema/security"
+   xsi:schemaLocation="http://www.springframework.org/schema/security
+   					   http://www.springframework.org/schema/security/spring-security.xsd
+					   http://www.springframework.org/schema/beans
+					   http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+<security:http>
+ 	<security:intercept-url pattern="/member/**" access="hasRole('ROLE_MEMBER')"/>  <!-- AuthUser를 통해 권한을 가져옴->member라는 권한만 가능  -->
+<!--  	hasRole이름 지정하는 곳: 	@PreAuthorize("hasRole('ROLE_MEMBER')") or 	@PreAuthorize("hasRole('ROLE_MEMBER', 'ROLE_AD')") -->
+ 	<security:intercept-url pattern="/login" access="permitAll"/>
+ 	<security:intercept-url pattern="/userform" access="permitAll"/>
+ 	<security:intercept-url pattern="/main" access="permitAll"/>
+ 	<!-- 폼 기반 인증 기능을 사용 -->
+ 	<security:form-login login-page="/login" login-processing-url="/login" username-parameter="id" password-parameter="pass" authentication-success-handler-ref="memberAuthSuccessHandler" />
+ 	<security:access-denied-handler ref="memberAccessDeniedHandler" />
+ 	
+ 	<security:logout logout-url="/logout" delete-cookies="JSESSIONID" invalidate-session="true" logout-success-url="/login"/>
+ 	
+ 	<security:session-management>
+ 		<security:concurrency-control max-sessions="1"/>
+ 	</security:session-management>
+ 	
+<!--  	<security:remember-me data-source-ref="dataSource" token-validity-seconds="604800" /> 자동 로그인 기능-->        
+<!--  	<security:logout logout-url="/member/logout" delete-cookies="remember-me, JSESSION-ID" /> -->
+
+ </security:http>
+ 
+ <bean id="memberAccessDeniedHandler" class="kr.or.crud.security.MemberAccessDeniedHandler" />
+ <bean id="memberAuthSuccessHandler" class="kr.or.crud.security.MemberAuthSuccessHandler" />
+ 
+ <bean id="memberDetailService" class="kr.or.crud.security.MemberDetailsService" />
+      
+<security:authentication-manager>
+    <security:authentication-provider user-service-ref="memberDetailService">
+        <security:password-encoder ref="bCryptPasswordEncoder" /> <!-- password 인코딩에 필수 -->
+    </security:authentication-provider>
+</security:authentication-manager>
+ 
+ 
+</beans>

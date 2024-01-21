@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="kr.or.crud.mapper.crudMapper"> <!-- mapper 위치 -->
+
+	<!-- 회원가입 -->
+	<insert id="postUser" parameterType="map">
+		<selectKey resultType="String" order="BEFORE" keyProperty="memId">
+			select 'M' || trim(to_char((nvl(max(substr(SUB_ID,2,5)),0)+1),'0000')) from member
+		</selectKey>
+		insert all
+			into MEMBER(MEM_ID, NAME, BIRTH, TEL, ID, PASS) values (#{memId},#{name},#{currentDate},#{tel},#{id},#{pass})
+			into AUTHRT(AUTHRT, MEM_ID) VALUES (#{auth},#{memId})
+		select * from dual
+	</insert>
+
+	<!-- 회원가입 중복 아이디 확인 -->
+	<select id="postId" parameterType="map" resultType="memberVO">
+		select * from member where id=#{id}
+	</select>
+	
+	<!-- 로그인 권한 -->
+	<resultMap id="memMap" type="memberVO">
+		<result property="memId" column="MEM_ID" />
+	    <result property="id" column="ID" />
+	    <result property="pass" column="PASS" />
+	    <result property="name" column="NAME" />
+	    <result property="birth" column="BIRTH" />
+	    <result property="tel" column="TEL" />
+	    <collection property="authList" resultMap="authMap" />
+	</resultMap>
+
+	<resultMap id="authMap" type="authrtVO">
+	    <result property="memId" column="MEM_ID" />
+	    <result property="authrt" column="AUTHRT" />
+	</resultMap>
+
+	<select id="login" parameterType="memberVO" resultMap="memMap">
+	     SELECT A.MEM_ID, A.NAME, A.BIRTH, A.TEL, A.ID, A.PASS,
+	           B.MEM_ID, B.AUTHRT
+	     FROM MEMBER A LEFT OUTER JOIN AUTHRT B ON (A.MEM_ID = B.MEM_ID)
+	     WHERE A.ID = #{id}
+	</select>
+	<!-- 로그인 권한 끝 -->
+	
+	<!-- 회원정보 가져오기 -->
+	<select id="userInfo" parameterType="String" resultType="memberVO">
+		select * from member where mem_id=#{memId}
+	</select>
+	
+	<!-- 회원정보수정 -->
+	<update id="memberUpdate" parameterType="map">
+		UPDATE MEMBER SET ADDRESS=#{address}, EMAIL=#{email}, COM_NAME=#{comName} WHERE mem_id=#{memId}
+	</update>
+	
+	<!-- 구독 등록  -->
+	<insert id="subInsert" parameterType="map">
+		<selectKey resultType="java.lang.String" order="BEFORE" keyColumn="subId" keyProperty="subId">
+			select 'SUB' || trim(to_char((nvl(max(substr(SUB_ID,4,8)),0)+1),'0000')) from SUBSCRIPTION
+		</selectKey>
+		insert into SUBSCRIPTION(SUB_ID, MEM_ID, SER_ID, SUB_START_DATE, SUB_END_DATE) VALUES (#{subId},#{memId},#{dataNum},sysdate,sysdate+#{periodNum})
+	</insert>
+	
+	<!-- 사용현황 등록  -->
+	<insert id="usaInsert" parameterType="map">
+		<selectKey resultType="String" order="BEFORE" keyProperty="usaId">
+			select 'USA' || trim(to_char((nvl(max(substr(USA_ID,4,8)),0)+1),'0000')) from USAGESTATUS
+		</selectKey>
+		insert into USAGESTATUS(USA_ID, SUB_ID, MEM_ID, SER_ID) VALUES (#{usaId},#{subId},#{memId},#{dataNum})
+	</insert>
+	
+	<!-- 구독 확인 -->
+	<select id="subSelect" parameterType="String" resultType="subVO">
+		SELECT MEM_ID, MAX(TO_DATE(SUB_END_DATE)-TO_DATE(sysdate)) AS period FROM SUBSCRIPTION WHERE MEM_ID=#{memId} GROUP BY MEM_ID
+	</select>
+	
+	<!-- 구독 현황 리스트 -->
+	<select id="subSelectList" parameterType="String" resultType="subVO">
+		SELECT a.sub_id, a.MEM_ID, a.SER_ID, a.SUB_START_DATE, a.SUB_END_DATE,n.SER_NAME as serName,TO_DATE(a.SUB_END_DATE)-TO_DATE(sysdate) as period FROM SUBSCRIPTION a inner join service n on a.ser_id=n.ser_id WHERE MEM_ID=#{memId}
+	</select>
+
+	<!-- 구독 연장 -->
+	<update id="subExtend" parameterType="map">
+		update SUBSCRIPTION set SUB_END_DATE=SUB_END_DATE+#{SerPeriod} where sub_id=#{subId}
+	</update>
+	
+	<!-- 서비스 정보 -->
+	<select id="serInfo" parameterType="String" resultType="SerVO">
+		select * from SERVICE where SER_NAME=#{serName}
+	</select>
+	
+</mapper>
