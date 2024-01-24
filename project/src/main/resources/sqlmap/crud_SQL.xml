@@ -8,7 +8,7 @@
 	<!-- 회원가입 -->
 	<insert id="postUser" parameterType="map">
 		<selectKey resultType="String" order="BEFORE" keyProperty="memId">
-			select 'M' || trim(to_char((nvl(max(substr(SUB_ID,2,5)),0)+1),'0000')) from member
+			select 'M' || trim(to_char((nvl(max(substr(MEM_ID,2,5)),0)+1),'0000')) from member
 		</selectKey>
 		insert all
 			into MEMBER(MEM_ID, NAME, BIRTH, TEL, ID, PASS) values (#{memId},#{name},#{currentDate},#{tel},#{id},#{pass})
